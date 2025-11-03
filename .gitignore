@@ -205,3 +205,67 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# QiTlalli Project Specific
+# Business sensitive documents and data
+docs/assets/private/
+customer-data/
+patient-data/
+proprietary/
+business-docs/
+
+# Production secrets (never commit real credentials)
+.env.production
+.env.local
+secrets/
+keys/
+
+# Customer/client specific configurations
+client-configs/
+customer-deployments/
+
+# Business intelligence and analytics
+analytics/
+reports/
+dashboards/
+
+# Backup files with potential sensitive data
+backups/*.sql
+backups/*.dump
+*.backup
+
+# SaaS platform specific
+tenant-configs/
+multi-tenant/*/secrets/
+
+# Development runtime directories (recreated automatically)
+docker-volumes/
+backups/
+
+# SSL certificates and keys (never commit)
+addons/*/keys/
+*.key
+*.pem
+*.crt
+account.json
+
+# Google Cloud service account keys (never commit)
+*-service-account.json
+*-credentials.json
+gcp-key.json
+service-account.json
+application_default_credentials.json
+
+# Cloud SQL Proxy (local development)
+cloud_sql_proxy
+
+# Terraform state files (if using infrastructure as code)
+*.tfstate
+*.tfstate.backup
+.terraform/
+terraform.tfvars
+
+# Secret files (use Google Secret Manager instead)
+secrets.txt
+passwords.txt
+.secrets/
