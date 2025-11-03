@@ -1,0 +1,106 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: qitlalli-odoo
+  labels:
+    cloud.googleapis.com/load-balancer-type: "External"
+  annotations:
+    run.googleapis.com/ingress: all
+    run.googleapis.com/execution-environment: gen2
+spec:
+  template:
+    metadata:
+      labels:
+        run.googleapis.com/execution-environment: gen2
+      annotations:
+        autoscaling.knative.dev/minScale: "1"
+        autoscaling.knative.dev/maxScale: "10"
+        run.googleapis.com/cloudsql-instances: PROJECT_ID:REGION:qitlalli-db
+        run.googleapis.com/cpu-throttling: "false"
+    spec:
+      serviceAccountName: qitlalli-service-account@PROJECT_ID.iam.gserviceaccount.com
+      containerConcurrency: 80
+      timeoutSeconds: 3600
+      containers:
+      - name: qitlalli-odoo
+        image: gcr.io/PROJECT_ID/qitlalli-odoo:latest
+        ports:
+        - name: http1
+          containerPort: 8069
+        resources:
+          limits:
+            cpu: "2"
+            memory: "4Gi"
+          requests:
+            cpu: "1"
+            memory: "2Gi"
+        env:
+        - name: DB_HOST
+          value: "localhost"
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_NAME
+          value: "qitlalli"
+        - name: DB_USER
+          value: "qitlalli_user"
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: qitlalli-db-password
+              key: latest
+        - name: ODOO_ADMIN_PASSWD
+          valueFrom:
+            secretKeyRef:
+              name: qitlalli-admin-password
+              key: latest
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: qitlalli-jwt-secret
+              key: latest
+        - name: EMAIL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: qitlalli-email-password
+              key: latest
+        - name: WHATSAPP_API_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: qitlalli-whatsapp-token
+              key: latest
+        - name: GOOGLE_CLOUD_SQL_CONNECTION_NAME
+          value: "PROJECT_ID:REGION:qitlalli-db"
+        - name: PRODUCTION
+          value: "True"
+        - name: DEBUG
+          value: "False"
+        startupProbe:
+          httpGet:
+            path: /web/health
+            port: 8069
+          initialDelaySeconds: 60
+          timeoutSeconds: 30
+          periodSeconds: 10
+          failureThreshold: 10
+        livenessProbe:
+          httpGet:
+            path: /web/health
+            port: 8069
+          initialDelaySeconds: 120
+          timeoutSeconds: 30
+          periodSeconds: 60
+          failureThreshold: 3
+        volumeMounts:
+        - name: filestore
+          mountPath: /var/lib/odoo
+      volumes:
+      - name: filestore
+        csi:
+          driver: filestore.csi.storage.gke.io
+          volumeAttributes:
+            tier: standard
+            network: default
+            instance-id: qitlalli-filestore
+  traffic:
+  - percent: 100
+    latestRevision: true

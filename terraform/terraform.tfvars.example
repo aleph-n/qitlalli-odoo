@@ -1,0 +1,53 @@
+# Example Terraform Variables Configuration
+# Copy this file to terraform.tfvars and customize for your environment
+
+# Required variables
+project_id = "your-gcp-project-id"
+region     = "us-central1"
+
+# Environment configuration
+environment = "prod"  # dev, staging, prod
+
+# Database configuration
+database_name = "qitlalli"
+db_tier      = "db-f1-micro"  # Start small, scale up as needed
+
+# Network configuration  
+subnet_cidr = "10.0.1.0/24"
+
+# Storage configuration
+filestore_capacity_gb = 1024  # 1TB minimum for Filestore
+
+# Application configuration
+app_image  = "gcr.io/your-project-id/qitlalli-odoo:latest"
+app_cpu    = "2"
+app_memory = "4Gi"
+
+# Scaling configuration
+min_instances = 1
+max_instances = 10
+auto_scaling_enabled = true
+
+# Backup and compliance
+enable_backup           = true
+backup_retention_days   = 30
+enable_ssl             = true
+hipaa_compliance       = true
+audit_log_retention_days = 2555  # 7 years
+
+# Monitoring
+enable_monitoring    = true
+notification_email   = "alerts@yourcompany.com"
+
+# Multi-tenancy (for SaaS deployment)
+enable_multi_tenancy    = false  # Set to true for multi-tenant SaaS
+tenant_isolation_method = "database"
+max_tenants            = 100
+
+# Cost management
+cost_center              = "healthcare-platform"
+budget_alert_threshold   = 500  # USD per month
+enable_preemptible      = false  # Set to true for dev/staging to save costs
+
+# Data residency (leave empty to use main region)
+data_residency_region = ""  # Override region for compliance if needed

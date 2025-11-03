@@ -1,0 +1,27 @@
+steps:
+  # Build the Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build',
+      '-f', 'gcp/Dockerfile',
+      '-t', 'gcr.io/$PROJECT_ID/qitlalli-odoo:latest',
+      '-t', 'gcr.io/$PROJECT_ID/qitlalli-odoo:$BUILD_ID',
+      '.'
+    ]
+
+  # Push the Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/qitlalli-odoo:latest']
+  
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/qitlalli-odoo:$BUILD_ID']
+
+# Store images in Container Registry
+images:
+  - 'gcr.io/$PROJECT_ID/qitlalli-odoo:latest'
+  - 'gcr.io/$PROJECT_ID/qitlalli-odoo:$BUILD_ID'
+
+# Build options
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: 'E2_HIGHCPU_8'
