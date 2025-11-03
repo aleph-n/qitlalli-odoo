@@ -1,0 +1,78 @@
+QiTlalli Healthcare Platform - Dual License
+
+Copyright (c) 2025 QiTlalli - QiPanda.org
+
+This project is dual licensed under:
+
+1. GNU AFFERO GENERAL PUBLIC LICENSE Version 3 (for open source use)
+2. Commercial License Agreement (for commercial/SaaS use)
+
+================================================================================
+OPEN SOURCE LICENSE (AGPL v3.0)
+================================================================================
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+The AGPL license applies to all use cases EXCEPT commercial deployment.
+If you run this software as a service (SaaS) or use it in a commercial 
+healthcare practice, you must either:
+- Make your entire application open source under AGPL v3, OR
+- Obtain a commercial license (see below)
+
+================================================================================
+COMMERCIAL LICENSE
+================================================================================
+
+For commercial use, SaaS deployment, or proprietary integration:
+
+ALLOWED UNDER COMMERCIAL LICENSE:
+✅ Healthcare practices and medical organizations
+✅ Multi-tenant SaaS deployment
+✅ White-label and custom branding
+✅ Proprietary modifications and extensions
+✅ Integration with proprietary systems
+✅ Enterprise support and consulting
+
+COMMERCIAL LICENSE REQUIRED FOR:
+🏢 Medical practices using for patient care
+🏭 SaaS providers offering hosted healthcare services
+🏥 Healthcare systems and hospital networks
+💼 Healthcare technology companies
+🔒 Any use where AGPL copyleft terms cannot be met
+
+CONTACT FOR COMMERCIAL LICENSING:
+Email: licensing@qitlalli.org
+Web: https://qitlalli.org/licensing
+Subject: "Commercial License Inquiry - [Your Use Case]"
+
+================================================================================
+ADDITIONAL TERMS
+================================================================================
+
+HEALTHCARE DATA COMPLIANCE:
+This software may be used with protected health information (PHI) only 
+under appropriate licenses and compliance frameworks (HIPAA, GDPR, etc.).
+Commercial license includes compliance consultation and support.
+
+CONTRIBUTION POLICY:
+Contributions to this project are welcome under the project's Contributor 
+License Agreement (CLA). Contributors retain copyright while granting 
+QiTlalli rights to use contributions under both license models.
+
+TRADEMARK NOTICE:
+"QiTlalli" is a trademark of QiPanda.org. Use of the trademark requires
+separate permission beyond software licensing.
+
+For questions about licensing, commercial use, or compliance:
+Contact: legal@qitlalli.org

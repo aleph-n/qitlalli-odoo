@@ -3,7 +3,8 @@
 > **Bridging Ancestral Wisdom with Modern Technology**  
 > A production-ready healthcare platform built on Odoo 18 with cloud-native architecture
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+[![Commercial License](https://img.shields.io/badge/Commercial-License%20Available-green.svg)](mailto:licensing@qitlalli.org)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/)
 [![Google Cloud](https://img.shields.io/badge/GCP-Deployed-4285F4.svg)](https://cloud.google.com/)
 [![Odoo](https://img.shields.io/badge/Odoo-18.0-714B67.svg)](https://www.odoo.com/)
@@ -40,7 +41,7 @@ Infrastructure as Code (Terraform) Layer:
 ┌─────────────────────────────────────────────────────────────┐
 │                    Terraform State Management               │
 │  ├── GCP APIs        ├── IAM/Security    ├── Networking     │
-│  ├── Cloud Resources ├── Secret Manager  ├── Monitoring    │
+│  ├── Cloud Resources ├── Secret Manager  ├── Monitoring     │
 └─────────────────────────────────────────────────────────────┘
                                │
 Application & Data Layer:
@@ -276,9 +277,28 @@ This platform demonstrates enterprise software development capabilities and repr
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+### Dual License Model
 
-**Note**: While the core platform code is open source, commercial deployment and SaaS offerings may require separate licensing agreements. Contact for enterprise and commercial use inquiries.
+**Open Source License**: AGPL v3.0
+- ✅ **Academic Research**: Free for educational and research use
+- ✅ **Non-Commercial Healthcare**: Free for non-profit healthcare organizations  
+- ✅ **Community Development**: Open source contributions welcome
+- ⚠️ **Copyleft Requirement**: Derivative works must also be open source
+
+**Commercial License**: Proprietary
+- 🏢 **Healthcare Providers**: Commercial license for medical practices
+- 🏭 **SaaS Deployment**: License required for hosted/multi-tenant services
+- 🔒 **Enterprise Features**: Advanced features under commercial license
+- 💼 **White Label**: Branding and customization rights
+
+### Why Dual Licensing?
+
+**Protects Business Value**: Prevents direct commercial competition using your code
+**Encourages Innovation**: Open source fosters community contributions  
+**Healthcare Focus**: Balances accessibility with sustainable business model
+**IP Protection**: Maintains control over specialized healthcare innovations
+
+**Contact**: For commercial licensing inquiries and enterprise deployment rights
 
 ---
 
