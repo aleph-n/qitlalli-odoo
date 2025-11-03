@@ -55,9 +55,14 @@ help:
 	@echo "  make status         Show container status"
 	@echo "  make health         Check service health"
 	@echo ""
-	@echo "💾 Database Operations:"
-	@echo "  make backup         Create database backup"
-	@echo "  make restore FILE=<backup.sql>  Restore from backup"
+	@echo "💾 Backup & Restore Operations:"
+	@echo "  make backup         Create COMPLETE site backup (DB + files + config)"
+	@echo "  make backup-db      Create database backup only"
+	@echo "  make backup-prod    Create production cloud backup"
+	@echo "  make backup-list    List all available backups"
+	@echo "  make restore BACKUP=<folder>  Restore complete site from backup"
+	@echo "  make restore-db FILE=<file>   Restore database only"
+	@echo "  make backup-archive BACKUP=<folder>  Compress backup for storage"
 	@echo ""
 	@echo "🔧 Development Tools:"
 	@echo "  make update         Update Odoo modules"
@@ -149,17 +154,90 @@ health:
 	@echo "Database Service:"
 	@$(DOCKER_COMPOSE) exec -T db pg_isready -U odoo || echo "Database not ready"
 
-## Create database backup
-backup:
+## Create database backup only
+backup-db:
 	$(call log_info,"Creating database backup...")
 	@mkdir -p $(BACKUP_DIR)
-	$(DOCKER_COMPOSE) exec -T db pg_dump -U odoo -h localhost qitlalli_db > $(BACKUP_DIR)/qitlalli_backup_$(TIMESTAMP).sql
-	$(call log_success,"Backup created: $(BACKUP_DIR)/qitlalli_backup_$(TIMESTAMP).sql")
+	$(DOCKER_COMPOSE) exec -T db pg_dump -U odoo -h localhost qitlalli_db > $(BACKUP_DIR)/qitlalli_db_$(TIMESTAMP).sql
+	$(call log_success,"Database backup created: $(BACKUP_DIR)/qitlalli_db_$(TIMESTAMP).sql")
 
-## Restore database from backup (usage: make restore FILE=backup.sql)
-restore:
+## Create complete site backup (database + filestore + configuration)
+backup:
+	$(call log_info,"Creating complete QiTlalli site backup...")
+	@mkdir -p $(BACKUP_DIR)/qitlalli_full_$(TIMESTAMP)
+	$(call log_info,"1/4 Backing up database...")
+	$(DOCKER_COMPOSE) exec -T db pg_dump -U odoo -h localhost qitlalli_db > $(BACKUP_DIR)/qitlalli_full_$(TIMESTAMP)/database.sql
+	$(call log_info,"2/4 Backing up filestore...")
+	$(DOCKER_COMPOSE) exec -T web tar -czf - /var/lib/odoo/filestore > $(BACKUP_DIR)/qitlalli_full_$(TIMESTAMP)/filestore.tar.gz
+	$(call log_info,"3/4 Backing up configuration...")
+	cp -r config/ $(BACKUP_DIR)/qitlalli_full_$(TIMESTAMP)/config/
+	cp .env $(BACKUP_DIR)/qitlalli_full_$(TIMESTAMP)/.env 2>/dev/null || cp .env.example $(BACKUP_DIR)/qitlalli_full_$(TIMESTAMP)/.env.example
+	$(call log_info,"4/4 Creating backup manifest...")
+	@echo "QiTlalli Complete Site Backup" > $(BACKUP_DIR)/qitlalli_full_$(TIMESTAMP)/BACKUP_INFO.txt
+	@echo "Created: $(shell date)" >> $(BACKUP_DIR)/qitlalli_full_$(TIMESTAMP)/BACKUP_INFO.txt
+	@echo "Database: database.sql" >> $(BACKUP_DIR)/qitlalli_full_$(TIMESTAMP)/BACKUP_INFO.txt
+	@echo "Filestore: filestore.tar.gz" >> $(BACKUP_DIR)/qitlalli_full_$(TIMESTAMP)/BACKUP_INFO.txt
+	@echo "Configuration: config/ and .env files" >> $(BACKUP_DIR)/qitlalli_full_$(TIMESTAMP)/BACKUP_INFO.txt
+	@echo "Docker Compose Version: $(shell $(DOCKER_COMPOSE) version --short 2>/dev/null || echo 'unknown')" >> $(BACKUP_DIR)/qitlalli_full_$(TIMESTAMP)/BACKUP_INFO.txt
+	@echo "Git Commit: $(shell git rev-parse HEAD 2>/dev/null || echo 'not-a-git-repo')" >> $(BACKUP_DIR)/qitlalli_full_$(TIMESTAMP)/BACKUP_INFO.txt
+	$(call log_success,"Complete backup created: $(BACKUP_DIR)/qitlalli_full_$(TIMESTAMP)/")
+	$(call log_info,"Backup size: $(shell du -sh $(BACKUP_DIR)/qitlalli_full_$(TIMESTAMP) | cut -f1)")
+
+## Create production cloud backup (for deployed sites)
+backup-prod:
+	$(call log_info,"Creating production site backup...")
+	@mkdir -p $(BACKUP_DIR)/qitlalli_prod_$(TIMESTAMP)
+	@command -v gcloud >/dev/null 2>&1 || { $(call log_error,"Google Cloud CLI is required for production backup."); exit 1; }
+	$(call log_info,"1/3 Backing up Cloud SQL database...")
+	gcloud sql export sql qitlalli-db gs://$(GCP_PROJECT_ID)-backups/database_$(TIMESTAMP).sql --database=qitlalli --project=$(GCP_PROJECT_ID)
+	$(call log_info,"2/3 Backing up secrets...")
+	@mkdir -p $(BACKUP_DIR)/qitlalli_prod_$(TIMESTAMP)/secrets
+	@for secret in qitlalli-db-password qitlalli-admin-password qitlalli-jwt-secret; do \
+		echo "Backing up $$secret..."; \
+		gcloud secrets versions access latest --secret=$$secret --project=$(GCP_PROJECT_ID) > $(BACKUP_DIR)/qitlalli_prod_$(TIMESTAMP)/secrets/$$secret.txt; \
+	done
+	$(call log_info,"3/3 Backing up infrastructure state...")
+	@if [ -d terraform ]; then cp -r terraform/ $(BACKUP_DIR)/qitlalli_prod_$(TIMESTAMP)/terraform/; fi
+	cp deploy.py $(BACKUP_DIR)/qitlalli_prod_$(TIMESTAMP)/ 2>/dev/null || true
+	$(call log_success,"Production backup created: $(BACKUP_DIR)/qitlalli_prod_$(TIMESTAMP)/")
+
+## Archive backup (compress for long-term storage)
+backup-archive:
+	@if [ -z "$(BACKUP)" ]; then \
+		$(call log_error,"Please specify backup directory: make backup-archive BACKUP=qitlalli_full_20251102_143000"); \
+		exit 1; \
+	fi
+	$(call log_info,"Archiving backup: $(BACKUP)")
+	@cd $(BACKUP_DIR) && tar -czf $(BACKUP).tar.gz $(BACKUP)
+	$(call log_success,"Archive created: $(BACKUP_DIR)/$(BACKUP).tar.gz")
+	$(call log_info,"Archive size: $(shell du -sh $(BACKUP_DIR)/$(BACKUP).tar.gz | cut -f1)")
+	$(call log_warning,"You can safely delete the uncompressed backup: rm -rf $(BACKUP_DIR)/$(BACKUP)")
+
+## List available backups
+backup-list:
+	$(call log_info,"Available backups in $(BACKUP_DIR):")
+	@echo ""
+	@echo "📁 Complete Site Backups:"
+	@ls -la $(BACKUP_DIR)/ | grep qitlalli_full || echo "   No full site backups found"
+	@echo ""
+	@echo "🏭 Production Backups:"
+	@ls -la $(BACKUP_DIR)/ | grep qitlalli_prod || echo "   No production backups found"
+	@echo ""
+	@echo "💾 Database Only Backups:"
+	@ls -la $(BACKUP_DIR)/ | grep "\.sql$$" || echo "   No database backups found"
+	@echo ""
+	@echo "📦 Archived Backups:"
+	@ls -la $(BACKUP_DIR)/ | grep "\.tar\.gz$$" || echo "   No archived backups found"
+	@echo ""
+	@echo "💡 Usage examples:"
+	@echo "   make restore BACKUP=qitlalli_full_20251102_143000"
+	@echo "   make restore-db FILE=qitlalli_db_20251102_143000.sql"
+	@echo "   make restore-archive ARCHIVE=qitlalli_full_20251102_143000.tar.gz"
+
+## Restore database only (usage: make restore-db FILE=backup.sql)
+restore-db:
 	@if [ -z "$(FILE)" ]; then \
-		$(call log_error,"Please specify backup file: make restore FILE=backup.sql"); \
+		$(call log_error,"Please specify backup file: make restore-db FILE=backup.sql"); \
 		exit 1; \
 	fi
 	$(call log_warning,"This will replace the current database. Are you sure? (Ctrl+C to cancel)")
@@ -167,6 +245,59 @@ restore:
 	$(call log_info,"Restoring database from $(FILE)...")
 	$(DOCKER_COMPOSE) exec -T db psql -U odoo -d qitlalli_db < $(FILE)
 	$(call log_success,"Database restored from $(FILE)")
+
+## Restore complete site from backup (usage: make restore BACKUP=qitlalli_full_20251102_143000)
+restore:
+	@if [ -z "$(BACKUP)" ]; then \
+		$(call log_error,"Please specify backup directory: make restore BACKUP=qitlalli_full_20251102_143000"); \
+		exit 1; \
+	fi
+	@if [ ! -d "$(BACKUP_DIR)/$(BACKUP)" ]; then \
+		$(call log_error,"Backup directory not found: $(BACKUP_DIR)/$(BACKUP)"); \
+		$(call log_info,"Available backups:"); \
+		ls -la $(BACKUP_DIR)/ | grep qitlalli_full || echo "No full backups found"; \
+		exit 1; \
+	fi
+	$(call log_warning,"This will replace the entire site (database + filestore + config). Are you sure? (Ctrl+C to cancel)")
+	@read -p "Press Enter to continue..."
+	$(call log_info,"Stopping services...")
+	$(DOCKER_COMPOSE) down
+	$(call log_info,"1/4 Restoring database...")
+	$(DOCKER_COMPOSE) up -d db
+	@sleep 5
+	$(DOCKER_COMPOSE) exec -T db psql -U odoo -d qitlalli_db < $(BACKUP_DIR)/$(BACKUP)/database.sql
+	$(call log_info,"2/4 Restoring filestore...")
+	$(DOCKER_COMPOSE) up -d web
+	@sleep 5
+	$(DOCKER_COMPOSE) exec -T web rm -rf /var/lib/odoo/filestore/* 2>/dev/null || true
+	$(DOCKER_COMPOSE) exec -T web tar -xzf - -C / < $(BACKUP_DIR)/$(BACKUP)/filestore.tar.gz
+	$(call log_info,"3/4 Restoring configuration...")
+	@if [ -d "$(BACKUP_DIR)/$(BACKUP)/config" ]; then \
+		cp -r $(BACKUP_DIR)/$(BACKUP)/config/* config/ 2>/dev/null || true; \
+	fi
+	@if [ -f "$(BACKUP_DIR)/$(BACKUP)/.env" ]; then \
+		cp $(BACKUP_DIR)/$(BACKUP)/.env .env; \
+	fi
+	$(call log_info,"4/4 Restarting services...")
+	$(DOCKER_COMPOSE) restart
+	@sleep 10
+	$(call log_success,"Site restored from backup: $(BACKUP)")
+	$(call log_info,"Site should be available at: http://localhost:8069")
+
+## Extract and restore from archive (usage: make restore-archive ARCHIVE=qitlalli_full_20251102_143000.tar.gz)
+restore-archive:
+	@if [ -z "$(ARCHIVE)" ]; then \
+		$(call log_error,"Please specify archive file: make restore-archive ARCHIVE=backup.tar.gz"); \
+		exit 1; \
+	fi
+	@if [ ! -f "$(BACKUP_DIR)/$(ARCHIVE)" ]; then \
+		$(call log_error,"Archive file not found: $(BACKUP_DIR)/$(ARCHIVE)"); \
+		exit 1; \
+	fi
+	$(call log_info,"Extracting archive: $(ARCHIVE)")
+	@cd $(BACKUP_DIR) && tar -xzf $(ARCHIVE)
+	@BACKUP_NAME=$$(basename $(ARCHIVE) .tar.gz) && \
+	$(MAKE) restore BACKUP=$$BACKUP_NAME
 
 ## Update Odoo modules
 update:
